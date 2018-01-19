@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/repos/midas/!svn/ver/5848/tags/tag_1.5.0.0R35/src/sdk/custom/module/custom_data/bom
+END
+preproc_embedded.make
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/repos/midas/!svn/ver/5848/tags/tag_1.5.0.0R35/src/sdk/custom/module/custom_data/bom/preproc_embedded.make
+END
+cfiles.make
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/repos/midas/!svn/ver/5848/tags/tag_1.5.0.0R35/src/sdk/custom/module/custom_data/bom/cfiles.make
+END
+binary_embedded.make
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/repos/midas/!svn/ver/5848/tags/tag_1.5.0.0R35/src/sdk/custom/module/custom_data/bom/binary_embedded.make
+END
+gzip_embedded.make
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/repos/midas/!svn/ver/5848/tags/tag_1.5.0.0R35/src/sdk/custom/module/custom_data/bom/gzip_embedded.make
+END

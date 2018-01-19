@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/repos/midas/!svn/ver/5848/tags/tag_1.5.0.0R35/src/sdk/custom/project/helloDemo
+END
+modules.make
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/repos/midas/!svn/ver/5848/tags/tag_1.5.0.0R35/src/sdk/custom/project/helloDemo/modules.make
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/repos/midas/!svn/ver/5848/tags/tag_1.5.0.0R35/src/sdk/custom/project/helloDemo/Makefile
+END
