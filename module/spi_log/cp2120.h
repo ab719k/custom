@@ -42,15 +42,3 @@
 #define CP2120_REG_I2CTO2		0x09	// second I2C timeout - configure SMBus polling
 
 
-// this as a macro is probably a bad idea
-/*.macro CP2120_RESET
-	CLR	CS_PINS, CP2120_RST_PIN
-	LDI	ITER, 4000
-cp2120RstLoop:
-	QBEQ	cp2120RstLoopEnd, ITER, 0
-        SUB	ITER, ITER, 1
-        JMP	cp2120RstLoop	
-cp2120RstLoopEnd:
-	SET	CS_PINS, CP2120_RST_PIN
-.endm */
-
