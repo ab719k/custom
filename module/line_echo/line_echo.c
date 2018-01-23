@@ -4,10 +4,10 @@
 /*****************************************************************************/
 
 /*
-** Copyright ©2015-2017. Lantronix, Inc. All Rights Reserved.
+** Copyright ¬©2015-2017. Lantronix, Inc. All Rights Reserved.
 ** By using this software, you are agreeing to the terms of the Software
 ** Development Kit (SDK) License Agreement included in the distribution package
-** for this software (the ìLicense Agreementî).
+** for this software (the ‚ÄúLicense Agreement‚Äù).
 ** Under the License Agreement, this software may be used solely to create
 ** custom applications for use on the Lantronix xPico Wi-Fi product.
 ** THIS SOFTWARE AND ANY ACCOMPANYING DOCUMENTATION IS PROVIDED "AS IS".
@@ -55,15 +55,25 @@
 #include "ltrx_stream.h" /* Delivered with SDK. */
 #include "ltrx_tlog.h" /* Delivered with SDK. */
 
+// Configurable PIN
+#include "ltrx_cpm.h" /* Delivered with SDK. */
+
+
+// SPI
+#include "ltrx_spi.h" /* Delivered with SDK. */
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 
-
+#include "CP2120.h"
+//#include <i2c_mux.h>
 /*****************************************************************************/
 /*                              Defines                                      */
 /*****************************************************************************/
+
+#define INCLUDE_SPI_CODE
 
 #define CLI_SCAN_LINE_LENGTH 77
 
@@ -71,13 +81,20 @@
 
 #define MAC_ADDRESS_LENGTH 6
 
+/* SPI */
+#ifdef INCLUDE_SPI_CODE
+#define MAX_TRANSFER_LENGTH 32
+#endif 
+
+
 
 /*****************************************************************************/
 /*                         Local Constants                                   */
 /*****************************************************************************/
 
 static const uint32_t s_delayTimeInMilliseconds = 20000;
-
+static struct ltrx_trigger spiTrigger;
+    
 /*****************************************************************************/
 /*                             Structs                                       */
 /*****************************************************************************/
@@ -114,6 +131,8 @@ bool StartLineProtocol(uint16_t zeroBasedIndex);
 
 void StopLineProtocol(uint16_t zeroBasedIndex);
 
+void signal_spi_trigger(void);
+
 /*****************************************************************************/
 /*                         Local Constants                                   */
 /*****************************************************************************/
@@ -135,6 +154,11 @@ static struct thread_info *s_threadInfo[MAX_LOGICAL_SERIAL_LINES];
 
 static struct ltrx_thread *s_threadForLine[MAX_LOGICAL_SERIAL_LINES];
 
+/* SPI */
+#ifdef INCLUDE_SPI_CODE
+static struct ltrx_thread *s_threadForSpi[MAX_SPI_EXTERNAL];
+static struct ltrx_thread *s_threadForSpiInt[MAX_SPI_EXTERNAL];
+#endif
 
 /*****************************************************************************/
 /*                               Code                                        */
@@ -279,6 +303,85 @@ static bool outputClose(struct output_stream *outStream)
 }
 #endif
 
+
+
+
+#ifdef INCLUDE_SPI_CODE
+static void spiLoop(struct thread_info *tiSpi)
+{
+    unsigned long count = 0;
+    while(tiSpi->isRunning)
+    {
+        char txBuffer[MAX_TRANSFER_LENGTH];
+        uint8_t rxBuffer[MAX_TRANSFER_LENGTH];
+		
+        struct ltrx_spi_descriptor lsd =
+        {
+            .data_bytes = snprintf(txBuffer, sizeof(txBuffer), "Hello IPS %08lx", ++count),
+            .mosi_buf = (void *)txBuffer,
+            .miso_buf = rxBuffer
+        };
+		
+		// Reserve a 
+		// Chip select the ADC line.
+		
+		// Initialize the ADC sensor
+		
+		// read from the ADC sensor.
+		
+		//
+		
+        ltrx_spi_transfer(tiSpi->zeroBasedIndex, &lsd);
+        
+		TLOG(TLOG_SEVERITY_LEVEL__INFORMATIONAL, "Sent \"%s\"", txBuffer);
+        TLOG_HEXDUMP(TLOG_SEVERITY_LEVEL__INFORMATIONAL, rxBuffer, lsd.data_bytes, NULL);
+        ltrx_thread_sleep(5000);
+    }
+}
+
+static void spiThread(void *opaque)
+{
+    uint16_t zeroBasedIndex = (uint32_t)opaque;
+    uint16_t spi = zeroBasedIndex + 1;
+    bool loggedStartMessage = false;
+    struct thread_info tiSpi =
+    {
+        .zeroBasedIndex = zeroBasedIndex,
+        .isRunning = true
+    };
+    s_threadInfo[zeroBasedIndex] = &tiSpi;
+    while(
+        tiSpi.isRunning &&
+        ! ltrx_spi_open(zeroBasedIndex, 1000)
+    );
+    if(tiSpi.isRunning)
+    {
+        TLOG(
+            TLOG_SEVERITY_LEVEL__INFORMATIONAL,
+            "Spi ()%s started on SPI %u",
+            /*s_spiProtocol*/s_lineProtocol.protocolName,
+            spi
+        );
+        loggedStartMessage = true;
+    }
+    if(tiSpi.isRunning)
+    {
+        spiLoop(&tiSpi);
+    }
+    if(loggedStartMessage)
+    {
+        TLOG(
+            TLOG_SEVERITY_LEVEL__INFORMATIONAL,
+            "%s stopped on SPI %u",
+            /*s_spiProtocol*/s_lineProtocol.protocolName,
+            spi
+        );
+    }
+    ltrx_spi_close(zeroBasedIndex);
+    s_threadInfo[zeroBasedIndex] = NULL;
+    s_threadForSpi[zeroBasedIndex] = 0;
+}
+#endif // INCLUDE_SPI_CODE
 /*****************************************************************************/
 /*                               Code                                        */
 /*****************************************************************************/
@@ -410,7 +513,6 @@ static void echoData(struct thread_info *ti)
 								&isfcc.inStream, &osfcs.outStream, &running, true
 							);
 							TLOG(TLOG_SEVERITY_LEVEL__DEBUG, "Scan completed.");
-
 						}						
 						
 						//ltrx_output_stream_write_line(&ti->ostu.outStream, " BEGIN: Trying to write to outSteam from osfcs  to ostu \r\n" );
@@ -424,6 +526,11 @@ static void echoData(struct thread_info *ti)
 					case '4':
 						cnt =snprintf(buf, STR_BUF_SIZE, "Running SPI Test Case =%d", current_choice);
 						ltrx_output_stream_write_line(&ti->ostu.outStream, buf );
+                        
+                        // Send Data to SPI Bridge and then 
+                        
+                        // Set the Trigger waiting for the return values
+                        LTRX_TRIGGER_WAIT(&spiTrigger, 5000);
 						
 					break;
 					default:
@@ -503,6 +610,11 @@ static void lineThread(void *opaque)
     {
         return;
     }
+    // Create spiTrigger
+    if(! ltrx_trigger_create(&spiTrigger, "SpiTrigger"))
+    {
+        return;
+    }
     s_threadInfo[zeroBasedIndex] = &ti;
     while(
         ti.isRunning &&
@@ -532,12 +644,79 @@ static void lineThread(void *opaque)
     ltrx_line_close(zeroBasedIndex);
     s_threadInfo[zeroBasedIndex] = NULL;
     ltrx_trigger_destroy(&ti.eventTrigger);
+    ltrx_trigger_destroy(&spiTrigger);
+    
     s_threadForLine[zeroBasedIndex] = 0;
 }
 
+void signal_spi_trigger(void) {
+    ltrx_trigger_signal(&spiTrigger); 
+}
+/* spiInterruptThread */
+static void spiInterruptThread(void *opaque)
+{
+    (void)opaque;
+    /* No role defined for the interruption thread 
+        uint16_t roleIndex = ltrx_cp_role_index_get(s_role.name);
+    */
+	uint16_t spi2i2c_interruppt_cp1 = 1; // 1 or 45??
+	uint16_t WM_PWRDWN_REQ_cp5 = 5; // 5 or 16??
+    uint8_t i = 0;
+	bool pwrDwn = false;
+	bool interrupt = false;
+	
+    /* No role defined for the isr.
+    if(roleIndex >= CPM_ROLE_MAX)
+    {
+        TLOG(
+            TLOG_SEVERITY_LEVEL__ALERT,
+            "%s role was not registered.", s_role.name
+        );
+        return;
+    }
+    TLOG(
+        TLOG_SEVERITY_LEVEL__INFORMATIONAL,
+        "%s role has logical index %u.", s_role.name, roleIndex
+    );
+	*/
+
+    // Following code does the testing of the WM_PWRDWN_REQ on CP5 
+    // Connect to a digital in to read the output of this pin    
+    while(i < 10)
+    {
+        ltrx_cp_write(WM_PWRDWN_REQ_cp5, pwrDwn);
+        pwrDwn = ! pwrDwn;
+        ltrx_thread_sleep(s_delayTimeInMilliseconds);
+		i++;
+    }
+     ltrx_cp_write(WM_PWRDWN_REQ_cp5, true);
+    // In this loop thread keeps on the loop to check for the Interrup Trigger on the CP1
+    // Once the
+	while(true) {
+		ltrx_cp_read(spi2i2c_interruppt_cp1, &interrupt);
+		if (interrupt) {
+            
+			//set a global value
+            // or call a global function
+            signal_spi_trigger();
+			ltrx_cp_write(WM_PWRDWN_REQ_cp5, true);
+			TLOG(
+				TLOG_SEVERITY_LEVEL__INFORMATIONAL,
+					"Interrupt recieved on %d ",interrupt
+			);
+			ltrx_thread_sleep(s_delayTimeInMilliseconds);
+			//set a global value
+			ltrx_cp_write(WM_PWRDWN_REQ_cp5, false);
+            
+		}
+		ltrx_thread_sleep(10);
+	}
+}
 bool StartLineProtocol(uint16_t zeroBasedIndex)
 {
     uint16_t line = zeroBasedIndex + 1;
+  
+TLOG(TLOG_SEVERITY_LEVEL__INFORMATIONAL, "StartLineProtocol ");  
     if(s_threadInfo[zeroBasedIndex] || s_threadForLine[zeroBasedIndex])
     {
         TLOG(
@@ -564,6 +743,26 @@ bool StartLineProtocol(uint16_t zeroBasedIndex)
         );
         return false;
     }
+  
+#ifdef INCLUDE_SPI_CODE    
+	// Create Thread for the SPI
+    s_threadForSpi[zeroBasedIndex] = ltrx_thread_create(
+        "SPI", /*s_spiProtocol.protocolName,*/
+        spiThread,
+        (void *)(uint32_t)zeroBasedIndex,
+        3000
+    );    
+#endif // INCLUDE_SPI_CODE    
+    
+	// Create a Thread for the interrupt 
+    ltrx_thread_create(
+        "SPI_2_I2C_INT",
+        spiInterruptThread,
+        NULL,
+        STACK_SIZE_GREEN_FROM_MAX_OBSERVED_STACK_USED(247)
+    );	
+	
+
     return true;
 }
 
@@ -571,6 +770,14 @@ void StopLineProtocol(uint16_t zeroBasedIndex)
 {
     bool wasRunning = false;
     struct thread_info *ti;
+    struct thread_info *tiSpi
+    ltrx_preemption_block();
+    
+    ltrx_preemption_unblock();   
+    
+    
+    
+    
     ltrx_preemption_block();
     ti = s_threadInfo[zeroBasedIndex];
     if(ti && ti->isRunning)
