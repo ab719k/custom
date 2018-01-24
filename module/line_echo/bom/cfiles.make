@@ -11,3 +11,4 @@
 
 CFILES := \
   $(BASE_DIRECTORY)/module/line_echo/line_echo.c \
+  $(BASE_DIRECTORY)/module/line_echo/MMA8451.c \
