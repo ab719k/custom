@@ -436,19 +436,19 @@ static void spiLoop(struct thread_info *ti)
 				
         ltrx_spi_transfer(ti->zeroBasedIndex, &lsd);
         
-		TLOG(TLOG_SEVERITY_LEVEL__INFORMATIONAL, "Sent \"%s\"", txBuffer);
+	TLOG(TLOG_SEVERITY_LEVEL__INFORMATIONAL, "Sent \"%s\"", txBuffer);
         TLOG_HEXDUMP(TLOG_SEVERITY_LEVEL__INFORMATIONAL, rxBuffer, lsd.data_bytes, NULL);
         //ltrx_thread_sleep(5000);
-		ltrx_thread_sleep(100);
-		// Reserve a 
-		// Chip select the ADC line.
-		
-		// Initialize the ADC sensor
-		
-		// read from the ADC sensor.
-		
-		//
-		spi_run = 0;
+	ltrx_thread_sleep(100);
+	// Reserve a 
+	// Configure ADC chipset
+
+	// Configure continuous stream of data
+
+	// Display the rxBuffer
+
+	//
+	spi_run = 0;
     }
 }
 #endif
