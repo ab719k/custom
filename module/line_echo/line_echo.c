@@ -88,17 +88,33 @@
 
 
 
+
 /*****************************************************************************/
 /*                         Local Constants                                   */
 /*****************************************************************************/
 
 static const uint32_t s_delayTimeInMilliseconds = 20000;
 static struct ltrx_trigger spiTrigger;
-    
+
+enum thread_type {
+	LineEcho,
+	SPI,
+	spiIntHandler
+};  
 /*****************************************************************************/
 /*                             Structs                                       */
 /*****************************************************************************/
 
+
+typedef struct threadNode_t threadNode;
+
+
+
+struct threadNode_t {
+	void *threadInfo;
+	thread_type t;
+	threadNode *n;
+};
 struct thread_info
 {
     uint32_t zeroBasedIndex;
@@ -151,7 +167,6 @@ static const struct ltrx_line_protocol s_lineProtocol =
 /*****************************************************************************/
 
 static struct thread_info *s_threadInfo[MAX_LOGICAL_SERIAL_LINES];
-
 static struct ltrx_thread *s_threadForLine[MAX_LOGICAL_SERIAL_LINES];
 
 /* SPI */
@@ -446,15 +461,14 @@ static void echoData(struct thread_info *ti)
     {
         char c = ltrx_input_stream_read(&ti->isfu.inStream);
         {
-            if(c == '\r')
-            {
-				switch(current_choice) {
+					if(c == '\r')
+					{
+					switch(current_choice) {
 					case '1':
 						ltrx_output_stream_write_line(&ti->ostu.outStream, "\n Running All testcases");
 						break;
 					case '2':
 						ltrx_output_stream_write_line(&ti->ostu.outStream, "\n Running USB testcases");
-						
 						cnt =snprintf(buf, STR_BUF_SIZE, "Running USB Rx/Tx case 1=%d", current_choice);
 						// create a FileDescriptor for Line USB CDC ACM
 						//int fd;
@@ -482,7 +496,7 @@ static void echoData(struct thread_info *ti)
 						ltrx_output_stream_write_line(&ti->ostu.outStream, buf );
 						
 					break;
-					case '3':
+					case '3': // READ
 						cnt =snprintf(buf, STR_BUF_SIZE, "\r\n Your choice is %d. \r\n Running WiFi Rx/Tx case\r\n ", current_choice);
 						ltrx_output_stream_write_line(&ti->ostu.outStream, buf );
 						TLOG(TLOG_SEVERITY_LEVEL__DEBUG, "Running WiFi Rx/Tx case");
@@ -523,15 +537,18 @@ static void echoData(struct thread_info *ti)
 						ltrx_thread_sleep(1000);
 						ltrx_output_stream_write_line(&ti->ostu.outStream, " Done with wlan scan\n\n" );
 					break;
-					case '4':
-						cnt =snprintf(buf, STR_BUF_SIZE, "Running SPI Test Case =%d", current_choice);
+					case '4': // READ_ADC_CHIPSET
+						cnt =snprintf(buf, STR_BUF_SIZE, "Running ADC Test Case =%d", current_choice);
 						ltrx_output_stream_write_line(&ti->ostu.outStream, buf );
-                        
-                        // Send Data to SPI Bridge and then 
-                        
-                        // Set the Trigger waiting for the return values
-                        LTRX_TRIGGER_WAIT(&spiTrigger, 5000);
-						
+            // Send Data to SPI Bridge and then 
+            // Set the Trigger waiting for the return values
+						TLOG(TLOG_SEVERITY_LEVEL__DEBUG, "Toggle CP1 to enable communication with the ADC chipset");
+						TLOG(TLOG_SEVERITY_LEVEL__DEBUG, "Configure ADC chipset using SPI Interface/Commands");	
+						TLOG(TLOG_SEVERITY_LEVEL__DEBUG, "Wait for toggle on Interrupt Pin after every command");
+						TLOG(TLOG_SEVERITY_LEVEL__DEBUG, "Read Response from ADC Chipset");
+						TLOG(TLOG_SEVERITY_LEVEL__DEBUG, "Done with ADC Testing");	
+            //LTRX_TRIGGER_WAIT(&spiTrigger, 5000);
+						case '5': // READ_UID_VALUE 	
 					break;
 					default:
 						cnt =snprintf(buf, STR_BUF_SIZE, "Invalid command c=%d", current_choice);
@@ -541,8 +558,9 @@ static void echoData(struct thread_info *ti)
 				ltrx_output_stream_write_line(&ti->ostu.outStream, "1) Run all test cases ");
 				ltrx_output_stream_write_line(&ti->ostu.outStream, "2) Test USB Rx and Tx ");
 				ltrx_output_stream_write_line(&ti->ostu.outStream, "3) Test WiFi Rx and Tx ");
-				ltrx_output_stream_write_line(&ti->ostu.outStream, "4) Read ADC");
-				ltrx_output_stream_write_line(&ti->ostu.outStream, "5) Toggle CP");
+				ltrx_output_stream_write_line(&ti->ostu.outStream, "4) Read ADC Value");
+				ltrx_output_stream_write_line(&ti->ostu.outStream, "5) Read ACCL Value");
+				ltrx_output_stream_write_line(&ti->ostu.outStream, "6) Toggle LED");
 				
 				ltrx_output_stream_write_without_ending_line (&ti->ostu.outStream, "Please enter a choice : " );
 				
@@ -755,7 +773,7 @@ TLOG(TLOG_SEVERITY_LEVEL__INFORMATIONAL, "StartLineProtocol ");
 #endif // INCLUDE_SPI_CODE    
     
 	// Create a Thread for the interrupt 
-    ltrx_thread_create(
+    spInt=ltrx_thread_create(
         "SPI_2_I2C_INT",
         spiInterruptThread,
         NULL,
@@ -771,8 +789,9 @@ void StopLineProtocol(uint16_t zeroBasedIndex)
     bool wasRunning = false;
     struct thread_info *ti;
     struct thread_info *tiSpi
+	    
     ltrx_preemption_block();
-    
+    tiSpi=s_threadInfo[zeroBasedIndex];
     ltrx_preemption_unblock();   
     
     
