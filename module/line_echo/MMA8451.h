@@ -21,12 +21,6 @@
 #define _ADAFRUIT_MMA8451_H_
 
 
-
-#define USE_SENSOR    // Support the sesor library; comment out to compile/run without sensor library.
-#ifdef USE_SENSOR
-#include <Adafruit_Sensor.h>
-#endif
-
 /*=========================================================================
     I2C ADDRESS/BITS
     -----------------------------------------------------------------------*/
@@ -79,19 +73,19 @@ typedef enum
 } mma8451_dataRate_t;
 
 
-void Adafruit_MMA8451(int32_t id /* default = -1*/);
-bool begin(uint8_t addr = MMA8451_DEFAULT_ADDRESS);
-void read();
-void setRange(mma8451_range_t range);
-mma8451_range_t getRange(void);
+void MMA8451(int32_t id /* default = -1*/);
+bool MMA8451_begin(uint8_t addr = MMA8451_DEFAULT_ADDRESS);
+void MMA8451_read();
+void MMA8451_setRange(mma8451_range_t range);
+mma8451_range_t MMA8451_getRange(void);
 
-void setDataRate(mma8451_dataRate_t dataRate);
-mma8451_dataRate_t getDataRate(void);
-uint8_t getOrientation(void);
+void MMA8451_setDataRate(mma8451_dataRate_t dataRate);
+mma8451_dataRate_t MMA8451_getDataRate(void);
+uint8_t MMA8451_getOrientation(void);
 
 // i2c_read and write
-void writeRegister8(uint8_t reg, uint8_t value);
-uint8_t readRegister8(uint8_t reg);
+void MMA8451_writeRegister8(uint8_t reg, uint8_t value);
+uint8_t MMA8451_readRegister8(uint8_t reg);
 
 struct Adafruit_MMA8451
 {
