@@ -10,5 +10,3 @@ MODULE_NAMES := \
     line_echo \
 	usb_acm \
 	monitor \
-    spi_log \
-	
